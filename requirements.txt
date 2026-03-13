@@ -6,3 +6,10 @@ python-jose[cryptography]
 passlib[bcrypt]
 pydantic
 pydantic-settings
+bcrypt
+python-dotenv
+aiofiles
+Pillow
+pymysql
+cryptography
+email-validator
