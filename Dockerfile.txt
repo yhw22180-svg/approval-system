@@ -1,0 +1,29 @@
+# 1. 파이썬 환경 설정
+FROM python:3.11-slim
+WORKDIR /app
+
+# 2. 필수 도구(Node.js) 설치 (프론트엔드 빌드용)
+RUN apt-get update && apt-get install -y nodejs npm
+
+# 3. 백엔드 패키지 설치
+# 에러가 났던 'approval-system/backend'가 아니라 실제 경로인 'backend'만 사용합니다.
+COPY backend/requirements.txt ./backend/
+RUN python -m venv /opt/venv && \
+    /opt/venv/bin/pip install --upgrade pip && \
+    /opt/venv/bin/pip install -r backend/requirements.txt
+
+# 4. 프론트엔드 패키지 설치 및 빌드
+COPY frontend/package*.json ./frontend/
+RUN cd frontend && npm install
+COPY frontend/ ./frontend/
+RUN cd frontend && npm run build
+
+# 5. 전체 파일 복사 및 화면 파일(static) 준비
+COPY . .
+RUN mkdir -p backend/static && \
+    cp -r frontend/dist/* backend/static/ || cp -r frontend/build/* backend/static/ || true
+
+# 6. 서버 실행 설정
+ENV PATH="/opt/venv/bin:$PATH"
+EXPOSE 8080
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8080"]
