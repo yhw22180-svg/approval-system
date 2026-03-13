@@ -1,25 +1,31 @@
+# 1. 환경 설정
 FROM python:3.11-slim
 WORKDIR /app
 
+# 필수 도구 설치
 RUN apt-get update && apt-get install -y nodejs npm
 
-# 백엔드 설치
+# 2. 백엔드 패키지 미리 설치 (캐시 활용)
 COPY backend/requirements.txt ./backend/
 RUN python -m venv /opt/venv && \
     /opt/venv/bin/pip install --upgrade pip && \
     /opt/venv/bin/pip install -r backend/requirements.txt
 
-# 프론트엔드 빌드
+# 3. 프론트엔드 빌드
 COPY frontend/package*.json ./frontend/
 RUN cd frontend && npm install
 COPY frontend/ ./frontend/
-RUN cd frontend && npx vite build
+# 권한 부여 후 빌드
+RUN chmod -R +x frontend/node_modules/.bin/ && \
+    cd frontend && npm run build
 
-# 파일 정리 (프론트엔드 dist 폴더 내용을 backend/static으로 복사)
+# 4. 전체 파일 복사 및 정리
 COPY . .
-RUN mkdir -p backend/static && \
+# 빌드 결과물을 backend/static으로 확실히 이동
+RUN rm -rf backend/static && mkdir -p backend/static && \
     cp -r frontend/dist/* backend/static/ || true
 
+# 5. 실행 설정
 ENV PATH="/opt/venv/bin:$PATH"
 ENV PYTHONPATH="/app"
 EXPOSE 8080
