@@ -7,22 +7,22 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# DB 및 모델 초기화 (에러 방지를 위해 try-except 권장되나 기존 구조 유지)
+# DB 초기화
 try:
     from database import engine, Base
     import models
     Base.metadata.create_all(bind=engine)
 except Exception as e:
-    print(f"DB 초기화 오류 (무시하고 진행): {e}")
+    print(f"DB 연결 알림: {e}")
 
 os.makedirs(os.getenv("UPLOAD_DIR", "./uploads"), exist_ok=True)
 
 app = FastAPI(title="전자결재 시스템 API")
 
-# 1. Healthcheck (Railway 배포 확인용 - 최상단 배치)
+# Railway 헬스체크용
 @app.get("/health")
 def health():
-    return {"status": "ok", "message": "server is healthy"}
+    return {"status": "ok"}
 
 app.add_middleware(
     CORSMiddleware,
@@ -31,28 +31,35 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 라우터 등록
-try:
-    from routers.auth_router import router as auth_router
-    from routers.users import router as users_router
-    from routers.documents import router as documents_router
-    app.include_router(auth_router)
-    app.include_router(users_router)
-    app.include_router(documents_router)
-except ImportError as e:
-    print(f"라우터 로드 오류: {e}")
+# 라우터 로드 (기존 라우터들을 모두 포함하세요)
+from routers.auth_router import router as auth_router
+app.include_router(auth_router)
 
-# 2. 정적 파일 및 화면 서빙
-STATIC_PATH = os.path.join(os.path.dirname(__file__), "static")
+# --- [핵심] 화면 파일 연결 설정 ---
+# 1. 현재 파일의 위치를 기준으로 static 폴더의 절대 경로를 계산합니다.
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_PATH = os.path.join(BASE_DIR, "static")
+
+# 2. static 폴더가 실제로 존재하는지 로그에 출력 (Railway 로그에서 확인 가능)
+print(f"Checking static files at: {STATIC_PATH}")
+print(f"Directory exists: {os.path.exists(STATIC_PATH)}")
 
 if os.path.exists(STATIC_PATH):
+    # JS, CSS 파일을 위한 설정
     app.mount("/static", StaticFiles(directory=STATIC_PATH), name="static")
 
+    # 나머지 모든 경로는 index.html을 보여줍니다.
     @app.get("/{full_path:path}")
-    def serve_frontend(full_path: str):
-        # API 경로(/health, /docs 등)가 아닐 때만 index.html 반환
+    async def serve_frontend(full_path: str):
+        # API 경로(/docs, /health 등)가 아닌 경우에만 index.html 반환
+        if full_path.startswith("api") or full_path in ["docs", "openapi.json", "health"]:
+            return None 
         return FileResponse(os.path.join(STATIC_PATH, "index.html"))
 else:
     @app.get("/")
     def root():
-        return {"message": "API Server Running", "warning": "Static folder missing"}
+        return {
+            "error": "Static folder missing",
+            "looked_at": STATIC_PATH,
+            "message": "프론트엔드 빌드 파일이 backend/static 폴더에 없습니다."
+        }
