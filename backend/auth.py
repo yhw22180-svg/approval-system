@@ -6,7 +6,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 import os
-import bcrypt  # 직접 임포트하여 passlib 호환성 문제 해결
+import bcrypt
 from dotenv import load_dotenv
 
 from database import get_db
@@ -19,7 +19,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "change-this-secret-key-in-production-pleas
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "480"))
 
-# bcrypt를 명시적으로 지정
+# bcrypt를 명시적으로 지정하여 passlib의 로드 오류 방지
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
 
@@ -29,7 +29,6 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return pwd_context.verify(plain_password, hashed_password)
     except Exception as e:
         print(f"❌ 비밀번호 검증 오류: {e}")
-        # passlib 검증이 실패할 경우 bcrypt 직접 검증 시도
         try:
             return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
         except:
@@ -38,11 +37,9 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def get_password_hash(password: str) -> str:
     """비밀번호 암호화 (에러 방지 로직 포함)"""
     try:
-        # 정상적인 경우 passlib 사용
         return pwd_context.hash(password)
     except Exception as e:
         print(f"⚠️ passlib 에러 발생, bcrypt 직접 사용: {e}")
-        # bcrypt 버전 이슈 발생 시 직접 암호화 수행
         pw_bytes = password.encode('utf-8')
         salt = bcrypt.gensalt()
         return bcrypt.hashpw(pw_bytes, salt).decode('utf-8')
