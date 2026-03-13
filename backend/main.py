@@ -7,7 +7,6 @@ import sys
 from dotenv import load_dotenv
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.dirname(BASE_DIR)
 sys.path.insert(0, BASE_DIR)
 
 load_dotenv()
@@ -18,7 +17,7 @@ try:
     Base.metadata.create_all(bind=engine)
     print("DB 초기화 성공")
 except Exception as e:
-    print(f"DB 초기화 알림: {e}")
+    print(f"DB 초기화 실패: {e}")
 
 app = FastAPI(title="전자결재 시스템")
 
