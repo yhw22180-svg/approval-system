@@ -2,6 +2,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
+import threading
 from dotenv import load_dotenv
 import logging
 
@@ -15,30 +16,28 @@ MAIL_SERVER = os.getenv("MAIL_SERVER", "smtp.gmail.com")
 MAIL_PORT = int(os.getenv("MAIL_PORT", "587"))
 COMPANY_NAME = os.getenv("COMPANY_NAME", "전자결재시스템")
 
-def send_email(to_email: str, subject: str, body_html: str) -> bool:
-    """이메일을 발송합니다. 실패 시 False를 반환합니다."""
+def _send_email_thread(to_email: str, subject: str, body_html: str):
     if not MAIL_USERNAME or not MAIL_PASSWORD:
-        logger.warning("이메일 설정이 없습니다. .env 파일을 확인해주세요.")
-        return False
+        return
     try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
         msg["From"] = f"{COMPANY_NAME} <{MAIL_FROM}>"
         msg["To"] = to_email
-
-        html_part = MIMEText(body_html, "html", "utf-8")
-        msg.attach(html_part)
-
-        with smtplib.SMTP(MAIL_SERVER, MAIL_PORT) as server:
+        msg.attach(MIMEText(body_html, "html", "utf-8"))
+        with smtplib.SMTP(MAIL_SERVER, MAIL_PORT, timeout=10) as server:
             server.ehlo()
             server.starttls()
             server.login(MAIL_USERNAME, MAIL_PASSWORD)
             server.sendmail(MAIL_FROM, [to_email], msg.as_string())
         logger.info(f"이메일 발송 성공: {to_email}")
-        return True
     except Exception as e:
         logger.error(f"이메일 발송 실패 ({to_email}): {e}")
-        return False
+
+def send_email(to_email: str, subject: str, body_html: str) -> bool:
+    thread = threading.Thread(target=_send_email_thread, args=(to_email, subject, body_html), daemon=True)
+    thread.start()
+    return True
 
 def send_approval_request_email(to_email: str, to_name: str, doc_title: str, doc_number: str, author_name: str, frontend_url: str = "http://localhost:3000"):
     subject = f"[{COMPANY_NAME}] 결재 요청 - {doc_title}"
