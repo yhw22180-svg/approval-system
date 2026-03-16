@@ -2,17 +2,20 @@
 nixPkgs = ["python311", "nodejs_20"]
 
 [phases.install]
+# venv 대신 시스템 환경에 직접 설치하는 것이 Railway(Nixpacks) 환경에서 더 안정적일 수 있습니다.
 cmds = [
-    "python -m venv /opt/venv && /opt/venv/bin/pip install -r requirements.txt",
+    "pip install -r requirements.txt",
     "cd frontend && npm install"
 ]
 
 [phases.build]
 cmds = [
-    "cd frontend && chmod -R +x node_modules/.bin && npm run build",
+    "cd frontend && npm run build",
     "mkdir -p backend/static",
-    "cp -r frontend/dist/* backend/static/"
+    # dist 폴더가 없을 경우를 대비해 -f 옵션 추가 및 경로 확인
+    "cp -rv frontend/dist/* backend/static/"
 ]
 
 [start]
-cmd = "/opt/venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
+# 설치된 위치를 고려하여 uvicorn 실행
+cmd = "python -m uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
