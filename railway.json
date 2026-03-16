@@ -1,13 +1,11 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "builder": "DOCKERFILE"
+    "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "uvicorn backend.main:app --host 0.0.0.0 --port 8080",
+    "startCommand": "cd backend && /opt/venv/bin/uvicorn main:app --host 0.0.0.0 --port $PORT",
     "restartPolicyType": "ON_FAILURE",
-    "healthcheckPath": "/health",
-    "healthcheckTimeout": 300,
-    "serviceName": "approval-system"
+    "healthcheckPath": "/health"
   }
 }
