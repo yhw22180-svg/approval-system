@@ -9,7 +9,7 @@ cmds = [
 
 [phases.build]
 cmds = [
-    "cd frontend && chmod +x node_modules/.bin/vite && npm run build",
+    "cd frontend && chmod -R +x node_modules/.bin && npm run build",
     "mkdir -p backend/static",
     "cp -r frontend/dist/* backend/static/"
 ]
