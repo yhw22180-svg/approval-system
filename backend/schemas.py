@@ -63,7 +63,7 @@ class LoginRequest(BaseModel):
     email: EmailStr
     password: str
 
-# ─── Approval Line Schemas ────────────────────────────────────────────────────
+# ─── Approval Line Template Schemas ───────────────────────────────────────────
 
 class TemplateStepCreate(BaseModel):
     step_order: int
@@ -106,7 +106,20 @@ class TemplateResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# ─── Document Schemas ─────────────────────────────────────────────────────────
+# ─── Document Detail Schema (구매의뢰/지출품의 상세항목) ──────────────────────────
+
+class DocumentDetailBase(BaseModel):
+    content: Optional[str] = None
+    spec: Optional[str] = None
+    unit: Optional[str] = "EA"
+    qty: Optional[int] = 1
+    amount: Optional[int] = 0
+    note: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+# ─── Document & Approval Step Schemas ─────────────────────────────────────────
 
 class ApprovalStepCreate(BaseModel):
     step_order: int
@@ -153,6 +166,7 @@ class DocumentCreate(BaseModel):
     content: str
     doc_type: str = "일반"
     template_id: Optional[int] = None
+    details: Optional[List[DocumentDetailBase]] = [] # 상세 항목 리스트 추가
     steps: List[ApprovalStepCreate]
 
 class DocumentUpdate(BaseModel):
@@ -174,6 +188,7 @@ class DocumentResponse(BaseModel):
     completed_at: Optional[datetime]
     author: UserSimple
     approval_steps: List[ApprovalStepResponse]
+    details: List[DocumentDetailBase] # 상세 내역 포함
     attachments: List[AttachmentResponse]
     history: List[HistoryResponse]
 
@@ -199,7 +214,7 @@ class ApprovalAction(BaseModel):
     action: str  # "approve" or "reject"
     comment: Optional[str] = None
 
-# ─── Notification Schemas ─────────────────────────────────────────────────────
+# ─── Notification & Dashboard ─────────────────────────────────────────────────
 
 class NotificationResponse(BaseModel):
     id: int
@@ -212,8 +227,6 @@ class NotificationResponse(BaseModel):
 
     class Config:
         from_attributes = True
-
-# ─── Dashboard Schemas ────────────────────────────────────────────────────────
 
 class DashboardStats(BaseModel):
     my_drafts: int

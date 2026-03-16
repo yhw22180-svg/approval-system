@@ -59,7 +59,7 @@ class ApprovalLineTemplate(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
     description = Column(Text, nullable=True)
-    doc_type = Column(String(50), nullable=True)  # 문서 유형 (휴가신청, 출장신청 등)
+    doc_type = Column(String(50), nullable=True)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -76,8 +76,8 @@ class ApprovalLineTemplateStep(Base):
     id = Column(Integer, primary_key=True, index=True)
     template_id = Column(Integer, ForeignKey("approval_line_templates.id"), nullable=False)
     step_order = Column(Integer, nullable=False)
-    step_name = Column(String(50), nullable=False)  # 예: 팀장, 부장, 대표
-    approver_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # 특정 사용자 지정 (선택)
+    step_name = Column(String(50), nullable=False)
+    approver_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 
     # Relationships
     template = relationship("ApprovalLineTemplate", back_populates="steps")
@@ -88,14 +88,14 @@ class ApprovalDocument(Base):
     __tablename__ = "approval_documents"
 
     id = Column(Integer, primary_key=True, index=True)
-    doc_number = Column(String(30), unique=True, nullable=False)  # 예: DOC-2024-0001
+    doc_number = Column(String(30), unique=True, nullable=False)
     title = Column(String(200), nullable=False)
     content = Column(Text, nullable=False)
-    doc_type = Column(String(50), nullable=False, default="일반")  # 휴가신청, 출장신청, 구매요청 등
+    doc_type = Column(String(50), nullable=False, default="일반")
     author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     template_id = Column(Integer, ForeignKey("approval_line_templates.id"), nullable=True)
     status = Column(SAEnum(DocumentStatus), default=DocumentStatus.draft, nullable=False)
-    current_step = Column(Integer, default=0)  # 현재 결재 단계 (0=미제출)
+    current_step = Column(Integer, default=0)
     total_steps = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -109,6 +109,25 @@ class ApprovalDocument(Base):
     attachments = relationship("Attachment", back_populates="document", cascade="all, delete-orphan")
     history = relationship("ApprovalHistory", back_populates="document", cascade="all, delete-orphan")
     notifications = relationship("Notification", back_populates="document", cascade="all, delete-orphan")
+    # 아래 줄이 추가되었습니다. (상세 내역 연결)
+    details = relationship("DocumentDetail", back_populates="document", cascade="all, delete-orphan")
+
+
+class DocumentDetail(Base):
+    __tablename__ = "document_details"
+
+    id = Column(Integer, primary_key=True, index=True)
+    document_id = Column(Integer, ForeignKey("approval_documents.id"), nullable=False)
+    
+    # 구매의뢰서, 지출품의서에서 쓰이는 상세 항목들
+    content = Column(String(255), nullable=True) # 품명/내용
+    spec = Column(String(255), nullable=True)    # 규격
+    unit = Column(String(50), nullable=True)     # 단위
+    qty = Column(Integer, nullable=True)         # 수량
+    amount = Column(BigInteger, nullable=True)   # 금액/단가
+    note = Column(Text, nullable=True)           # 비고
+
+    document = relationship("ApprovalDocument", back_populates="details")
 
 
 class ApprovalStep(Base):
@@ -134,7 +153,7 @@ class ApprovalHistory(Base):
     id = Column(Integer, primary_key=True, index=True)
     document_id = Column(Integer, ForeignKey("approval_documents.id"), nullable=False)
     actor_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    action = Column(String(50), nullable=False)  # submitted, approved, rejected, recalled
+    action = Column(String(50), nullable=False)
     comment = Column(Text, nullable=True)
     step_order = Column(Integer, nullable=True)
     step_name = Column(String(50), nullable=True)
