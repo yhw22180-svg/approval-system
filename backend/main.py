@@ -72,7 +72,7 @@ if os.path.exists(STATIC_PATH):
         # 1. API 관련 경로인지 확인
         # routers/auth_router.py 등에서 설정한 prefix 기반으로 필터링합니다.
         # 만약 prefix가 없다면 실제 호출되는 API 주소의 첫 단어를 여기에 넣으세요.
-        api_prefixes = ["auth", "users", "documents", "approval-lines", "notifications"]
+        api_prefixes = ["api", "auth", "users", "documents", "approval-lines", "notifications"]
         
         # 2. API 경로이거나 FastAPI 기본 경로라면 이 함수가 가로채지 않고 패스함
         if any(full_path.startswith(prefix) for prefix in api_prefixes) or \
