@@ -13,3 +13,4 @@ Pillow
 pymysql
 cryptography
 email-validator
+psycopg2-binary
