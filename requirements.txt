@@ -14,3 +14,4 @@ pymysql
 psycopg2-binary
 cryptography
 email-validatorpsycopg2 
+email-validator 
