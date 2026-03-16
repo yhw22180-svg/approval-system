@@ -11,5 +11,6 @@ python-dotenv
 aiofiles
 Pillow
 pymysql
+psycopg2-binary
 cryptography
 email-validator
