@@ -8,7 +8,10 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./approval_system.db")
 
-# SQLite용 connect_args (SQLite만 해당)
+# Railway에서 postgres:// 로 오는 경우 postgresql:// 로 변환
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 connect_args = {}
 if DATABASE_URL.startswith("sqlite"):
     connect_args = {"check_same_thread": False}
